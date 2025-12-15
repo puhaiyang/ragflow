@@ -13,7 +13,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-
+import asyncio
 import os
 import copy
 import logging
@@ -21,19 +21,68 @@ import importlib
 from filelock import FileLock
 
 from common.file_utils import get_project_base_directory
-from common.constants import SERVICE_CONF
+from common.constants import SERVICE_CONF, NACOS_DEFAULT_DATA_ID, NACOS_DEFAULT_GROUP
 from ruamel.yaml import YAML
 
+from v2.nacos import NacosNamingService, NacosConfigService, ClientConfigBuilder, GRPCConfig, \
+    Instance, SubscribeServiceParam, RegisterInstanceParam, DeregisterInstanceParam, \
+    BatchRegisterInstanceParam, GetServiceParam, ListServiceParam, ListInstanceParam, ConfigParam
+
+nacos_client = (ClientConfigBuilder()
+                .username(os.getenv('NACOS_USERNAME'))
+                .password(os.getenv('NACOS_PASSWORD'))
+                .server_address(os.getenv('NACOS_SERVER_ADDR', 'localhost:8848'))
+                .namespace_id(os.getenv('NACOS_NAMESAPCE_ID'))
+                .log_level('DEBUG')
+                .grpc_config(GRPCConfig(grpc_timeout=5000))
+                .build())
+
+async def _load_yaml_from_nacos_async(data_id: str = NACOS_DEFAULT_DATA_ID, group: str = NACOS_DEFAULT_GROUP) -> dict:
+    """
+    从 Nacos 读取 YAML 配置并使用 ruamel.yaml 解析
+    """
+    config_client = await NacosConfigService.create_config_service(nacos_client)
+    content = await config_client.get_config(ConfigParam(
+        data_id=data_id,
+        group=group
+    ))
+    if not content:
+        return {}
+    try:
+        yaml = YAML(typ="safe", pure=True)
+        conf = yaml.load(content)
+    except Exception as e:
+        raise ValueError(f'Invalid YAML config in Nacos: "{data_id}", {e}')
+    if conf is None:
+        return {}
+    if not isinstance(conf, dict):
+        raise ValueError(f'Config "{data_id}" must be a YAML mapping')
+    return conf
+
+def load_yaml_from_nacos(
+    data_id: str = NACOS_DEFAULT_DATA_ID,
+    group: str = NACOS_DEFAULT_GROUP,
+) -> dict:
+    """
+    同步接口（供 RAGFlow / 配置系统使用）
+    """
+    return asyncio.run(
+        _load_yaml_from_nacos_async(data_id, group)
+    )
 
 def load_yaml_conf(conf_path):
-    if not os.path.isabs(conf_path):
-        conf_path = os.path.join(get_project_base_directory(), conf_path)
-    try:
-        with open(conf_path) as f:
-            yaml = YAML(typ="safe", pure=True)
-            return yaml.load(f)
-    except Exception as e:
-        raise EnvironmentError("loading yaml file config from {} failed:".format(conf_path), e)
+    return load_yaml_from_nacos()
+
+# # 从yaml配置文件中加载
+# def load_yaml_conf(conf_path):
+#     if not os.path.isabs(conf_path):
+#         conf_path = os.path.join(get_project_base_directory(), conf_path)
+#     try:
+#         with open(conf_path) as f:
+#             yaml = YAML(typ="safe", pure=True)
+#             return yaml.load(f)
+#     except Exception as e:
+#         raise EnvironmentError("loading yaml file config from {} failed:".format(conf_path), e)
 
 
 def rewrite_yaml_conf(conf_path, config):

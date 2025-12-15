@@ -20,6 +20,9 @@ from strenum import StrEnum
 SERVICE_CONF = "service_conf.yaml"
 RAG_FLOW_SERVICE_NAME = "ragflow"
 
+NACOS_DEFAULT_GROUP = "DEFAULT_GROUP"
+NACOS_DEFAULT_DATA_ID = "xugurtp-ai-ragflow.yml"
+
 class CustomEnum(Enum):
     @classmethod
     def valid(cls, value):
