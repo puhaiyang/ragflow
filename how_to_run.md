@@ -89,3 +89,13 @@ export all_proxy=socks5://10.28.12.6:7078;
 
 
 
+下载xugu的python-driver:https://download_cloud.xugudb.com/v12.9.10/XuguDB-12.0.0-linux-x86_64-20250731-1209010.zip
+
+xugu数据库的IP为：10.28.25.75
+端口为：12345
+库为:YSL
+用户名和密码均为SYSDBA
+
+> cd xgcondb/
+> sudo cp libxugusql.so /usr/local/lib/
+> sudo ldconfig

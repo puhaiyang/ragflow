@@ -49,6 +49,7 @@ AUTO_DATE_TIMESTAMP_FIELD_PREFIX = {"create", "start", "end", "update", "read_ac
 class TextFieldType(Enum):
     MYSQL = "LONGTEXT"
     POSTGRES = "TEXT"
+    XUGU = "TEXT"
 
 
 class LongTextField(TextField):
@@ -375,15 +376,21 @@ class RetryingPooledPostgresqlDatabase(PooledPostgresqlDatabase):
         return None
 
 
+class RetryingPooledXuguDatabase(RetryingPooledPostgresqlDatabase):
+    """Xugu database connection class, compatible with PostgreSQL protocol"""
+    pass
+
+
 class PooledDatabase(Enum):
     MYSQL = RetryingPooledMySQLDatabase
     POSTGRES = RetryingPooledPostgresqlDatabase
+    XUGU = RetryingPooledXuguDatabase
 
 
 class DatabaseMigrator(Enum):
     MYSQL = MySQLMigrator
     POSTGRES = PostgresqlMigrator
-
+    XUGU = PostgresqlMigrator
 
 @singleton
 class BaseDataBase:
@@ -541,6 +548,7 @@ class MysqlDatabaseLock:
 class DatabaseLock(Enum):
     MYSQL = MysqlDatabaseLock
     POSTGRES = PostgresDatabaseLock
+    XUGU = PostgresDatabaseLock
 
 
 DB = BaseDataBase().database_connection

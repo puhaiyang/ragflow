@@ -47,6 +47,14 @@ user_default_llm:
 #   port: 5432
 #   max_connections: 100
 #   stale_timeout: 30
+xugu:
+  name: 'YSL'
+  user: 'SYSDBA'
+  password: 'SYSDBA'
+  host: '10.28.25.75'
+  port: 12345
+  max_connections: 100
+  stale_timeout: 30
 # s3:
 #   access_key: 'access_key'
 #   secret_key: 'secret_key'
