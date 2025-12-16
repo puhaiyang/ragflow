@@ -29,7 +29,7 @@ from v2.nacos import NacosNamingService, NacosConfigService, ClientConfigBuilder
     Instance, SubscribeServiceParam, RegisterInstanceParam, DeregisterInstanceParam, \
     BatchRegisterInstanceParam, GetServiceParam, ListServiceParam, ListInstanceParam, ConfigParam
 
-nacos_client = (ClientConfigBuilder()
+nacos_config_client = (ClientConfigBuilder()
                 .username(os.getenv('NACOS_USERNAME'))
                 .password(os.getenv('NACOS_PASSWORD'))
                 .server_address(os.getenv('NACOS_SERVER_ADDR', 'localhost:8848'))
@@ -42,7 +42,7 @@ async def _load_yaml_from_nacos_async(data_id: str = NACOS_DEFAULT_DATA_ID, grou
     """
     从 Nacos 读取 YAML 配置并使用 ruamel.yaml 解析
     """
-    config_client = await NacosConfigService.create_config_service(nacos_client)
+    config_client = await NacosConfigService.create_config_service(nacos_config_client)
     content = await config_client.get_config(ConfigParam(
         data_id=data_id,
         group=group
@@ -208,11 +208,22 @@ def update_config(key, value, conf_name=SERVICE_CONF):
 async def _register_to_server():
     local_ip = get_local_ip()
     server_http_port = CONFIGS.get(RAG_FLOW_SERVICE_NAME, {}).get("http_port")
-    response = await nacos_client.register_instance(
-        request=RegisterInstanceParam(service_name='xugurtp-ai-ragflow', group_name='DEFAULT_GROUP', ip=local_ip,
-                                      port=server_http_port, weight=1.0, cluster_name='c1', metadata={'a': 'b'},
-                                      enabled=True,
-                                      healthy=True, ephemeral=True))
+    naming_service = await NacosNamingService.create_naming_service(nacos_config_client)
+
+    response = await naming_service.register_instance(
+        RegisterInstanceParam(
+            service_name="xugurtp-ai-ragflow",
+            group_name="DEFAULT_GROUP",
+            ip=local_ip,
+            port=server_http_port,
+            weight=1.0,
+            cluster_name="c1",
+            metadata={"a": "b"},
+            enabled=True,
+            healthy=True,
+            ephemeral=True,
+        )
+    )
     return response
 
 
