@@ -29,6 +29,7 @@
 docker run -d \
   --name nacos \
   -p 8848:8848 \
+  -p 9848:9848 \
   -e MODE=standalone \
   -e NACOS_AUTH_ENABLE=true \
   -e NACOS_AUTH_IDENTITY_KEY=nacos \
@@ -40,5 +41,18 @@ docker run -d \
 访问，并配置配置
 http://10.28.20.106:8848/
 
+需要写入的配置为：
+> service_conf.yaml
+
+即：
+
+> xugurtp-ai-ragflow.yml
+
+---
 配置：
-> NACOS_USERNAME=nacos;NACOS_NAMESAPCE_ID=phy_ragflow;NACOS_PASSWORD=nacos;NACOS_SERVER_ADDR=10.28.20.106:8848;PYTHONUNBUFFERED=1
+> NACOS_USERNAME=nacos;NACOS_NAMESPACE_ID=phy_ragflow;NACOS_PASSWORD=nacos;NACOS_SERVER_ADDR=10.28.20.106:8848;PYTHONUNBUFFERED=1
+
+
+运行：
+> api/ragflow_server.py
+
