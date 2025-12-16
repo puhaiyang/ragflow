@@ -18,8 +18,9 @@ import os
 import copy
 import logging
 import importlib
+import socket
 from filelock import FileLock
-
+from api.constants import RAG_FLOW_SERVICE_NAME
 from common.file_utils import get_project_base_directory
 from common.constants import SERVICE_CONF, NACOS_DEFAULT_DATA_ID, NACOS_DEFAULT_GROUP
 from ruamel.yaml import YAML
@@ -73,18 +74,6 @@ def load_yaml_from_nacos(
 def load_yaml_conf(conf_path):
     return load_yaml_from_nacos()
 
-# # 从yaml配置文件中加载
-# def load_yaml_conf(conf_path):
-#     if not os.path.isabs(conf_path):
-#         conf_path = os.path.join(get_project_base_directory(), conf_path)
-#     try:
-#         with open(conf_path) as f:
-#             yaml = YAML(typ="safe", pure=True)
-#             return yaml.load(f)
-#     except Exception as e:
-#         raise EnvironmentError("loading yaml file config from {} failed:".format(conf_path), e)
-
-
 def rewrite_yaml_conf(conf_path, config):
     if not os.path.isabs(conf_path):
         conf_path = os.path.join(get_project_base_directory(), conf_path)
@@ -123,6 +112,18 @@ def read_config(conf_name=SERVICE_CONF):
 
 CONFIGS = read_config()
 
+def get_local_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # 尝试连接外部地址，但不发送数据
+        s.connect(("8.8.8.8", 80))
+        ip_address = s.getsockname()[0]
+    except Exception:
+        # 失败时回退到获取主机名 IP
+        ip_address = socket.gethostbyname(socket.gethostname())
+    finally:
+        s.close()
+    return ip_address
 
 def show_configs():
     msg = f"Current configs, from {conf_realpath(SERVICE_CONF)}:"
@@ -202,3 +203,22 @@ def update_config(key, value, conf_name=SERVICE_CONF):
         config = load_yaml_conf(conf_path=conf_path) or {}
         config[key] = value
         rewrite_yaml_conf(conf_path=conf_path, config=config)
+
+
+async def _register_to_server():
+    local_ip = get_local_ip()
+    server_http_port = CONFIGS.get(RAG_FLOW_SERVICE_NAME, {}).get("http_port")
+    response = await nacos_client.register_instance(
+        request=RegisterInstanceParam(service_name='xugurtp-ai-ragflow', group_name='DEFAULT_GROUP', ip=local_ip,
+                                      port=server_http_port, weight=1.0, cluster_name='c1', metadata={'a': 'b'},
+                                      enabled=True,
+                                      healthy=True, ephemeral=True))
+    return response
+
+
+def register_to_nacos():
+    """
+    注册服务到nacos
+    """
+    asyncio.run(_register_to_server())
+    logging.info("register to nacos success")

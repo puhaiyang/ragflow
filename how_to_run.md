@@ -56,3 +56,12 @@ http://10.28.20.106:8848/
 运行：
 > api/ragflow_server.py
 
+运行时如果无法下载https://huggingface.co/的模型，需要配置网络代理：
+```
+export https_proxy=http://10.28.12.6:7078;
+export http_proxy=http://10.28.12.6:7078;
+export all_proxy=socks5://10.28.12.6:7078;
+```
+
+
+https://github.com/nacos-group/nacos-sdk-python/tree/2.0.7

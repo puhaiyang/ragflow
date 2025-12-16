@@ -39,7 +39,7 @@ from common import settings
 from api.db.db_models import init_database_tables as init_web_db
 from api.db.init_data import init_web_data
 from common.versions import get_ragflow_version
-from common.config_utils import show_configs
+from common.config_utils import show_configs, register_to_nacos
 from common.mcp_tool_call_conn import shutdown_all_mcp_sessions
 from rag.utils.redis_conn import RedisDistributedLock
 
@@ -148,6 +148,8 @@ if __name__ == '__main__':
         app.config["MAIL_DEFAULT_SENDER"] = settings.MAIL_DEFAULT_SENDER
         smtp_mail_server.init_app(app)
 
+    # register to nacos
+    register_to_nacos()
 
     # start http server
     try:
