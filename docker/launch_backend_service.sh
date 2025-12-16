@@ -33,6 +33,12 @@ JEMALLOC_PATH=$(pkg-config --variable=libdir jemalloc)/libjemalloc.so
 
 PY=python3
 
+# xugu-nacos-config
+export NACOS_NAMESPACE_ID=phy_ragflow
+export NACOS_PASSWORD=nacos
+export NACOS_SERVER_ADDR=10.28.20.106:8848
+export NACOS_USERNAME=nacos
+
 # Set default number of workers if WS is not set or less than 1
 if [[ -z "$WS" || $WS -lt 1 ]]; then
   WS=1

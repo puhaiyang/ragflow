@@ -65,3 +65,27 @@ export all_proxy=socks5://10.28.12.6:7078;
 
 
 https://github.com/nacos-group/nacos-sdk-python/tree/2.0.7
+
+启动ragflow:
+> docker-compose up -d
+
+关闭ragflow:
+> docker-compose stop
+
+查看ragflow的镜像:
+> docker-compose ps
+
+安装依赖时，使用以下脚本：
+>  uv run download_deps.py --china-mirrors
+
+配置代理
+> export HF_ENDPOINT=https://hf-mirror.com
+
+```
+export https_proxy=http://10.28.12.6:7078;
+export http_proxy=http://10.28.12.6:7078;
+export all_proxy=socks5://10.28.12.6:7078;
+```
+
+
+
