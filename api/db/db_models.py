@@ -411,7 +411,7 @@ class RetryingPooledXuguDatabase(PooledDatabase, XuguDatabase):
                     raise e
                 # E16008 指定外键依赖关系时指定字段重复定义
                 if "E16008" in str(e):
-                    logging.warning("execute sql warning.",str(e))
+                    logging.warning("execute sql warning.%s" % str(e))
                     continue
                 if attempt < self.max_retries:
                     logging.warning(

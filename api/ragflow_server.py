@@ -88,16 +88,9 @@ if __name__ == '__main__':
         f'project base: {get_project_base_directory()}'
     )
 
-    # 强制覆盖所有现有的 loggers
+    # 强制覆盖所有现有的 loggers，设为 DEBUG
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.DEBUG)
-
-    # 遍历已存在的各个模块 logger 并强制设为 DEBUG
-    for name in logging.root.manager.loggerDict:
-        logging.getLogger(name).setLevel(logging.DEBUG)
-
-    # 再次确认 peewee
-    logging.getLogger('peewee').setLevel(logging.DEBUG)
 
     show_configs()
     settings.init_settings()
