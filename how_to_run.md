@@ -99,3 +99,16 @@ xugu数据库的IP为：10.28.25.75
 > cd xgcondb/
 > sudo cp libxugusql.so /usr/local/lib/
 > sudo ldconfig
+
+
+# 前端项目
+
+> wsl
+> curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+> source ~/.bashrc
+> nvm install 20
+> nvm use 20
+> node -v
+> npm install --legacy-peer-deps
+> export NODE_OPTIONS="--max-old-space-size=4096"
+> npm run dev
