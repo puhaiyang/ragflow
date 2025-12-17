@@ -33,7 +33,7 @@ from playhouse.pool import PooledMySQLDatabase, PooledPostgresqlDatabase, Pooled
 
 from api import utils
 from api.db import SerializedType
-from api.db.xugu import XuguDatabase, XuguMigrator
+from xgpeewee import *
 from api.utils.json_encode import json_dumps, json_loads
 from api.utils.configs import deserialize_b64, serialize_b64
 
@@ -426,7 +426,6 @@ class PooledDatabase(Enum):
 class DatabaseMigrator(Enum):
     MYSQL = MySQLMigrator
     POSTGRES = PostgresqlMigrator
-    XUGU = XuguMigrator
 
 @singleton
 class BaseDataBase:
