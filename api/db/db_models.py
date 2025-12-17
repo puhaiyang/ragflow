@@ -386,15 +386,17 @@ class RetryingPooledXuguDatabase(PooledDatabase, XuguDatabase):
 
     def execute_sql(self, sql, params=None, commit=True):
         # --- 针对虚谷的 SQL 预处理：修复布尔表达式 ---
-        # 1. 处理 Peewee 常用的 WHERE ? [True] 转换为 WHERE 1=1
-        if params == [True] or params == (True,):
-            # 只有当 SQL 结尾是 WHERE ? 时才替换，避免误伤其他包含 ? 的语句
-            if sql.strip().upper().endswith("WHERE ?"):
-                sql = sql.rstrip()[:-1] + "1=1"
-                params = None
 
-        # 2. 通用替换：将 WHERE TRUE 替换为虚谷支持的逻辑表达式
-        # 虚谷有时不识别裸露的关键字 TRUE 作为 WHERE 条件
+        if params and isinstance(params, (list, tuple)):
+            # 情况 1：Peewee 生成的 WHERE ? 且最后一个参数是 True (常见于全表更新/删除)
+            if sql.strip().upper().endswith("WHERE ?") and params[-1] is True:
+                sql = sql.rstrip()[:-1] + "1=1"
+                params = list(params)[:-1]  # 移除最后一个 True 参数
+
+            # 情况 2：Peewee 生成的特定占位符处理
+            # 遍历参数，如果发现有 True 用于 WHERE 子句（这步较难精准判断，先处理末尾最稳妥）
+
+        # 情况 3：硬编码的 WHERE TRUE 替换
         if "WHERE TRUE" in sql.upper():
             sql = re.sub(r"WHERE\s+TRUE", "WHERE 1=1", sql, flags=re.IGNORECASE)
 
