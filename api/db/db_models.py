@@ -409,7 +409,10 @@ class RetryingPooledXuguDatabase(PooledDatabase, XuguDatabase):
                 # 如果是语法错误（如 E19132 或 E17009），重试通常无效，直接抛出
                 if "E19132" in str(e) or "E17009" in str(e):
                     raise e
-
+                # E16008 指定外键依赖关系时指定字段重复定义
+                if "E16008" in str(e):
+                    logging.warning("execute sql warning.",str(e))
+                    continue
                 if attempt < self.max_retries:
                     logging.warning(
                         f"Xugu connection issue "

@@ -11,7 +11,10 @@ class XuguDatabase(Database):
         'DECIMAL': 'NUMERIC',
         'DOUBLE': 'DOUBLE',
         'FLOAT': 'FLOAT',
-        'UUID': 'VARCHAR(40)'
+        'UUID': 'VARCHAR(40)',
+        # --- 新增映射 ---
+        'TEXT': 'CLOB',  # 将 Peewee 的 TextField 映射为 CLOB
+        'JSON': 'CLOB',  # 将 Peewee 的 JSONField 映射为 CLOB
         }
     operations = {
         'LIKE': 'LIKE',
