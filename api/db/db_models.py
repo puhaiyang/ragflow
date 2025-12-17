@@ -31,6 +31,7 @@ from peewee import InterfaceError, OperationalError, BigIntegerField, BooleanFie
 from playhouse.migrate import MySQLMigrator, PostgresqlMigrator, migrate
 from playhouse.pool import PooledMySQLDatabase, PooledPostgresqlDatabase, PooledDatabase
 
+import api.db.xugu
 from api import utils
 from api.db import SerializedType
 from xgpeewee import *
@@ -384,14 +385,33 @@ class RetryingPooledXuguDatabase(PooledDatabase, XuguDatabase):
         super().__init__(database, **kwargs)
 
     def execute_sql(self, sql, params=None, commit=True):
+        # --- 针对虚谷的 SQL 预处理：修复布尔表达式 ---
+        # 1. 处理 Peewee 常用的 WHERE ? [True] 转换为 WHERE 1=1
+        if params == [True] or params == (True,):
+            # 只有当 SQL 结尾是 WHERE ? 时才替换，避免误伤其他包含 ? 的语句
+            if sql.strip().upper().endswith("WHERE ?"):
+                sql = sql.rstrip()[:-1] + "1=1"
+                params = None
+
+        # 2. 通用替换：将 WHERE TRUE 替换为虚谷支持的逻辑表达式
+        # 虚谷有时不识别裸露的关键字 TRUE 作为 WHERE 条件
+        if "WHERE TRUE" in sql.upper():
+            sql = re.sub(r"WHERE\s+TRUE", "WHERE 1=1", sql, flags=re.IGNORECASE)
+
+        # --- 原有的重试逻辑 ---
         for attempt in range(self.max_retries + 1):
             try:
+                # 注意：这里会调用父类 XuguDatabase 的 execute_sql
                 return super().execute_sql(sql, params, commit)
             except (OperationalError, InterfaceError, Exception) as e:
+                # 如果是语法错误（如 E19132 或 E17009），重试通常无效，直接抛出
+                if "E19132" in str(e) or "E17009" in str(e):
+                    raise e
+
                 if attempt < self.max_retries:
                     logging.warning(
                         f"Xugu connection issue "
-                        f"(attempt {attempt+1}/{self.max_retries}): {e}"
+                        f"(attempt {attempt + 1}/{self.max_retries}): {e}"
                     )
                     self._handle_connection_loss()
                     time.sleep(self.retry_delay * (2 ** attempt))
@@ -426,6 +446,7 @@ class PooledDatabase(Enum):
 class DatabaseMigrator(Enum):
     MYSQL = MySQLMigrator
     POSTGRES = PostgresqlMigrator
+    XUGU = api.db.xugu.XuguMigrator
 
 @singleton
 class BaseDataBase:
@@ -1158,7 +1179,7 @@ class SyncLogs(DataBaseModel):
 
 
 def migrate_db():
-    logging.disable(logging.ERROR)
+    # logging.disable(logging.ERROR)
     migrator = DatabaseMigrator[settings.DATABASE_TYPE.upper()].value(DB)
     try:
         migrate(migrator.add_column("file", "source_type", CharField(max_length=128, null=False, default="", help_text="where dose this document come from", index=True)))
@@ -1337,4 +1358,4 @@ def migrate_db():
         migrate(migrator.add_column("llm_factories", "rank", IntegerField(default=0, index=False)))
     except Exception:
         pass
-    logging.disable(logging.NOTSET)
+    # logging.disable(logging.NOTSET)
