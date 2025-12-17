@@ -87,6 +87,10 @@ if __name__ == '__main__':
     logging.info(
         f'project base: {get_project_base_directory()}'
     )
+    logger = logging.getLogger('peewee')
+    logger.addHandler(logging.StreamHandler())
+    logger.setLevel(logging.DEBUG)
+
     show_configs()
     settings.init_settings()
     settings.print_rag_settings()

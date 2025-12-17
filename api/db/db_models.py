@@ -29,10 +29,11 @@ from quart_auth import AuthUser
 from itsdangerous.url_safe import URLSafeTimedSerializer as Serializer
 from peewee import InterfaceError, OperationalError, BigIntegerField, BooleanField, CharField, CompositeKey, DateTimeField, Field, FloatField, IntegerField, Metadata, Model, TextField
 from playhouse.migrate import MySQLMigrator, PostgresqlMigrator, migrate
-from playhouse.pool import PooledMySQLDatabase, PooledPostgresqlDatabase
+from playhouse.pool import PooledMySQLDatabase, PooledPostgresqlDatabase, PooledDatabase
 
 from api import utils
 from api.db import SerializedType
+from api.db.xugu import XuguDatabase, XuguMigrator
 from api.utils.json_encode import json_dumps, json_loads
 from api.utils.configs import deserialize_b64, serialize_b64
 
@@ -376,9 +377,44 @@ class RetryingPooledPostgresqlDatabase(PooledPostgresqlDatabase):
         return None
 
 
-class RetryingPooledXuguDatabase(RetryingPooledPostgresqlDatabase):
-    """Xugu database connection class, compatible with PostgreSQL protocol"""
-    pass
+class RetryingPooledXuguDatabase(PooledDatabase, XuguDatabase):
+    def __init__(self, database, **kwargs):
+        self.max_retries = kwargs.pop("max_retries", 5)
+        self.retry_delay = kwargs.pop("retry_delay", 1)
+        super().__init__(database, **kwargs)
+
+    def execute_sql(self, sql, params=None, commit=True):
+        for attempt in range(self.max_retries + 1):
+            try:
+                return super().execute_sql(sql, params, commit)
+            except (OperationalError, InterfaceError, Exception) as e:
+                if attempt < self.max_retries:
+                    logging.warning(
+                        f"Xugu connection issue "
+                        f"(attempt {attempt+1}/{self.max_retries}): {e}"
+                    )
+                    self._handle_connection_loss()
+                    time.sleep(self.retry_delay * (2 ** attempt))
+                else:
+                    raise
+
+    def begin(self):
+        for attempt in range(self.max_retries + 1):
+            try:
+                return super().begin()
+            except (OperationalError, InterfaceError, Exception):
+                if attempt < self.max_retries:
+                    self._handle_connection_loss()
+                    time.sleep(self.retry_delay * (2 ** attempt))
+                else:
+                    raise
+
+    def _handle_connection_loss(self):
+        try:
+            self.close()
+        except Exception:
+            pass
+        self.connect(reuse_if_open=True)
 
 
 class PooledDatabase(Enum):
@@ -390,7 +426,7 @@ class PooledDatabase(Enum):
 class DatabaseMigrator(Enum):
     MYSQL = MySQLMigrator
     POSTGRES = PostgresqlMigrator
-    XUGU = PostgresqlMigrator
+    XUGU = XuguMigrator
 
 @singleton
 class BaseDataBase:
@@ -727,9 +763,10 @@ class TenantLLM(DataBaseModel):
 
 
 class TenantLangfuse(DataBaseModel):
+    # 在xugu数据库中 [E12020] 主键及索引字段定义长度和不能超过1024字节，secret_key和public_key去掉索引
     tenant_id = CharField(max_length=32, null=False, primary_key=True)
-    secret_key = CharField(max_length=2048, null=False, help_text="SECRET KEY", index=True)
-    public_key = CharField(max_length=2048, null=False, help_text="PUBLIC KEY", index=True)
+    secret_key = CharField(max_length=2048, null=False, help_text="SECRET KEY", index=False)
+    public_key = CharField(max_length=2048, null=False, help_text="PUBLIC KEY", index=False)
     host = CharField(max_length=128, null=False, help_text="HOST", index=True)
 
     def __str__(self):
