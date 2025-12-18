@@ -35,6 +35,7 @@ from common import settings
 from api.utils.api_utils import server_error_response
 from api.constants import API_VERSION
 from common.misc_utils import get_uuid
+from quart_session import Session
 
 settings.init_settings()
 
@@ -45,6 +46,9 @@ Request.json = property(lambda self: self.get_json(force=True, silent=True))
 app = Quart(__name__)
 app = cors(app, allow_origin="*")
 smtp_mail_server = Mail()
+
+# 初始化Session扩展
+Session(app)
 
 # Add this at the beginning of your file to configure Swagger UI
 swagger_config = {

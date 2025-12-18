@@ -39,6 +39,12 @@ export NACOS_PASSWORD=nacos
 export NACOS_SERVER_ADDR=10.28.20.106:8848
 export NACOS_USERNAME=nacos
 
+## 开启debug模式
+#export LOG_LEVEL=DEBUG
+#export RAGFLOW_LOG_LEVEL=DEBUG
+#export PEEWEE_LOG_LEVEL=DEBUG
+#
+
 # Set default number of workers if WS is not set or less than 1
 if [[ -z "$WS" || $WS -lt 1 ]]; then
   WS=1
