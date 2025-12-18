@@ -112,3 +112,10 @@ xugu数据库的IP为：10.28.25.75
 > npm install --legacy-peer-deps
 > export NODE_OPTIONS="--max-old-space-size=4096"
 > npm run dev
+
+
+# 用户登录流程
+1. 用户请求/v1/user/login接口，返回了一个token(uuid)，如：f24585b6dbea11f0979d0242ac180006
+2. 用户请求其他接口时，会在header中传入token(base64编码,jwt)`authorization
+ImYyNDU4NWI2ZGJlYTExZjA5NzlkMDI0MmFjMTgwMDA2Ig.aUO6Mg.2OKvvs7L9JkDl3rhIoW4dt_UO_E`
+3. 后台根据jwt进行校验，进行鉴权校验。底层调用`_load_user`
